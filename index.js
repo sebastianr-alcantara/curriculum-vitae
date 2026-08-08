@@ -139,7 +139,6 @@ function initializeSummaryModal() {
 
     // Funcion para mostrar el modal
     function showSummaryModal(departamento, provincias, feature) {
-        summaryModalContainer.style.position = 'relative';
         summaryModalContainer.style.display = 'flex';
         
         // Mostramos todas las provincias con experiencia
@@ -153,6 +152,7 @@ function initializeSummaryModal() {
                 <strong>Provincia:&nbsp;</strong>${provincias.join(', ')}
             </div>
             <div id="province-map-summary" class="geovisor"></div>
+            <div class="experience-in-department"></div>
         `;
 
         // Creamos el mapa provincial
@@ -222,6 +222,33 @@ function initializeSummaryModal() {
         );
 
         summaryMap.invalidateSize();
+
+        // Listamos la experiencia por departamento
+        var departmentExperience = information.experience.filter(
+            function (experiencia) {
+                return experiencia.department === departamento
+            }
+        );
+
+        var departmentExperienceContainer = document.querySelector('.experience-in-department');
+
+        departmentExperienceContainer.innerHTML = departmentExperience.map(
+            function (experience) {
+                return `
+                    <div class='single-experience'>
+                        <div class='header-experience'>
+                            <div class='company'>${experience.company}</div>
+                            <div class='date'>
+                                <span>${experience.start.split('-')[1]}/${experience.start.split('-')[0]}</span>
+                                <span>-</span>
+                                <span>${experience.end.split('-')[1]}/${experience.end.split('-')[0]}</span>
+                            </div>
+                        </div>
+                        <div class='summary-experience'>${experience.summary}</div>
+                    </div>
+                `;
+            }
+        ).join('');
     }
 
     // Funcion para ocultar el modal
