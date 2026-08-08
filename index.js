@@ -225,11 +225,13 @@ function initializeSummaryModal() {
         summaryMap.invalidateSize();
 
         // Listamos la experiencia por departamento
-        var departmentExperience = information.experience.filter(
-            function (experiencia) {
+        var departmentExperience = information.experience
+            .filter(function (experiencia) {
                 return experiencia.department === departamento
-            }
-        );
+            })
+            .sort(function (a, b) {
+                return new Date(b.end) - new Date(a.end);
+            });
 
         var departmentExperienceContainer = document.querySelector('.experience-in-department');
 
@@ -254,7 +256,6 @@ function initializeSummaryModal() {
 
     // Funcion para ocultar el modal
     function hideSummaryModal() {
-
         // Ocultamos el modal
         summaryModalContainer.style.display = 'none';
 
@@ -290,11 +291,13 @@ function initializeSummaryModal() {
         show: showSummaryModal,
         hide: hideSummaryModal
     };
-}
+};
 
 // ==============================
 // EDUCACIÓN PROFESIONAL
 // ==============================
+
+
 
 // ==============================
 // EXPERIENCIA PROFESIONAL
