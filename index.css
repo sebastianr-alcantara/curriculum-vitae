@@ -41,13 +41,16 @@
 }
 
 body {
-    position: absolute;
+    position: fixed; /*Antes era absolute*/
     display: flex;
-    font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
     justify-content: center;
     align-items: center;
     width: 100%;
+    min-height: 100%;
     height: 100%;
+    margin: 0;
+    font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
+    overflow: hidden;
 }
 
 /* ============================== */
@@ -339,7 +342,7 @@ body {
     font-size: var(--text-size-big);
 }
 
-.contenedor .main .section[id="sec-summary"] .interactive .summary-modal .modal-header .material-symbols-outlined[id="btn-close-summary-modal"] {
+.contenedor .main .section[id="sec-summary"] .interactive .summary-modal .modal-header .material-symbols-outlined[id="icon-close-header-summary-modal"] {
     cursor: pointer;
     color: var(--text-colour-primary-light);
     font-size: var(--text-size-big);
@@ -349,7 +352,7 @@ body {
     background: var(--colour-general-red);
 }
 
-.contenedor .main .section[id="sec-summary"] .interactive .summary-modal .modal-header .material-symbols-outlined[id="btn-close-summary-modal"]:hover{
+.contenedor .main .section[id="sec-summary"] .interactive .summary-modal .modal-header .material-symbols-outlined[id="icon-close-header-summary-modal"]:hover{
     background: var(--colour-general-red-dark);
 }
 
@@ -488,16 +491,18 @@ body {
     .contenedor {
         display: grid;
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr);
         grid-template-areas:
             "cabecera"
             "pie"
             "cuerpo";
+        max-width: 100vw;
+        min-width: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;;
         border: none;
         border-radius: 0;
-        min-width: 0;
+        overflow: hidden;
     }
 
     /* Header */
@@ -577,8 +582,8 @@ body {
         width: 100%;
         height: 100%;
         padding: 0.25rem;
-        overflow: hidden;
         min-height: 0; 
+        overflow: hidden;
     }
 
     .contenedor .main .section[id="sec-summary"] {
@@ -644,7 +649,7 @@ body {
         position:absolute;
         display:flex;
         flex-direction: column;
-        max-height: 50%;
+        max-height: 75%;
         width: 50%;
         top: 50%;
         left: 50%;

@@ -136,6 +136,7 @@ function initializeSummaryModal() {
     // Seleccionamos los elementos del modal que son configurables
     var summaryModalContainer = document.querySelector('.summary-modal');
     var summaryModalBody = summaryModalContainer.querySelector('.modal-body');
+    var closeSummaryModalButton = summaryModalContainer.querySelector('#icon-close-header-summary-modal');
 
     // Funcion para mostrar el modal
     function showSummaryModal(departamento, provincias, feature) {
@@ -253,14 +254,36 @@ function initializeSummaryModal() {
 
     // Funcion para ocultar el modal
     function hideSummaryModal() {
-        var bounds = summaryMap.getBounds();
+
+        // Ocultamos el modal
         summaryModalContainer.style.display = 'none';
-        summaryMap.invalidateSize();
-        
+
+        // Restauramos el estilo del departamento seleccionado
+        if (featureSelected) {
+            featureSelected.setStyle(
+                getDefaultStyle(featureSelected.feature)
+            );
+
+            featureSelected = null;
+        }
+
+        // Eliminamos el mapa provincial
+        if (provinceSummaryMap) {
+            provinceSummaryMap.remove();
+            provinceSummaryMap = null;
+        }
+
+        // Actualizamos el tamaño del mapa principal
         setTimeout(function() {
-            summaryMap.fitBounds(bounds);
-        }, 500);
+            if (summaryMap) {
+                summaryMap.invalidateSize();
+            }
+        }, 100);
     }
+
+    closeSummaryModalButton.addEventListener('click', function () {
+        hideSummaryModal();
+    });
 
     // Retornamos las funciones
     return {
