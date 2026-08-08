@@ -13,8 +13,8 @@ function initializeMapSummary() {
         'map-summary', 
         {
             center: [-9.19, -75.0152],
-            zoomSnap: 5,
-            zoomDelta: 5,
+            zoomSnap: 0.1,
+            zoomDelta: 0.1,
             dragging: false,
             scrollWheelZoom: false,
             zoomControl: false,
