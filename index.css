@@ -450,7 +450,6 @@ body {
 
 /* EDUCACIÓN PROFESIONAL*/
 .contenedor .main .section[id="sec-education"] {
-    display: flex;
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
@@ -496,8 +495,15 @@ body {
     width: 1rem;
     height: 12rem;
     border: 0;
-    border-radius: 0;
     background: var(--colour-primary-dark);
+}
+
+.contenedor .main .section[id="sec-education"] .time-line .year-mark:first-child .line {
+    border-radius: 1rem 1rem 0 0;
+}
+
+.contenedor .main .section[id="sec-education"] .time-line .year-mark:last-child .line {
+    border-radius: 0 0 1rem 1rem;
 }
 
 .contenedor .main .section[id="sec-education"] .time-line .year-mark .circle {
