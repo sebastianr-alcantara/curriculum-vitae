@@ -68,6 +68,20 @@ var information = {
     experience: [
         {
             id: 1,
+            department: "Lima",
+            province: ["Lima"],
+            sect: "Area Natural Protegida",
+            company: "Autoridad Municipal de los Pantanos de Villa - Prohvilla",
+            mode:"Presencial",
+            summary: "Pasantía en el humedal Los Pantanos de Villa en la Oficina de Investigación Científica y Desarrollo de Proyectos",
+            job: "Pasante",
+            level: "Pasante",
+            start: "2020-01-03",
+            end: "2020-04-02",
+            skills: ["Proactivo"]
+        },
+	{
+            id: 2,
             department: "Piura",
             province: ["Paita"],
             sect: "Drenaje Pluvial",
@@ -81,7 +95,7 @@ var information = {
             skills: ["Proactivo"]
         },
         {
-            id: 2,
+            id: 3,
             department: "Lima",
             province: ["Lima"],
             sect: "Telecomunicaciones",
@@ -95,7 +109,7 @@ var information = {
             skills: ["Proactivo","Eficiencia"]
         },
         {
-            id: 3,
+            id: 4,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -109,7 +123,7 @@ var information = {
             skills: ["Proactivo","Liderazgo"]
         },
         {
-            id: 4,
+            id: 5,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -123,7 +137,7 @@ var information = {
             skills: ["Proactivo","Liderazgo"]
         },
         {
-            id: 5,
+            id: 6,
             department: "Lambayeque",
             province: ["Chiclayo","Lambayeque"],
             sect: "Saneamiento de Agua y Desagüe",
@@ -137,7 +151,7 @@ var information = {
             skills: ["Proactivo","Liderazgo"]
         },
         {
-            id: 6,
+            id: 7,
             department: "Lima",
             province: ["Lima"],
             sect: "Inmobiliario",
