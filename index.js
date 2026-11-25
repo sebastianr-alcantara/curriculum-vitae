@@ -11,7 +11,7 @@ function initializeMapSummary() {
 
     departamentosExperiencia = Array.from(new Set(information.experience.map(function(experience) {
         return experience.department;
-    })));
+    }).filter(Boolean)));
 
     summaryMap = L.map(
         'map-summary',
@@ -141,6 +141,21 @@ function normalizeSearch(value) {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
+function getList(value) {
+    if (Array.isArray(value)) {
+        return value.filter(Boolean);
+    }
+
+    return value ? [value] : [];
+}
+
+function getExperienceLocation(experience) {
+    return [
+        experience.department,
+        getList(experience.province).join(', ')
+    ].filter(Boolean).join(' · ');
+}
+
 function initializeExperienceDashboard() {
     var sectorSelect = document.querySelector('#experience-sector');
     var departmentSelect = document.querySelector('#experience-department');
@@ -148,10 +163,10 @@ function initializeExperienceDashboard() {
     var clearButton = document.querySelector('#clear-experience-filters');
     var sectors = Array.from(new Set(information.experience.map(function(experience) {
         return experience.sect;
-    }))).sort();
+    }).filter(Boolean))).sort();
     var departments = Array.from(new Set(information.experience.map(function(experience) {
         return experience.department;
-    }))).sort();
+    }).filter(Boolean))).sort();
 
     sectors.forEach(function(sector) {
         var option = document.createElement('option');
@@ -208,10 +223,10 @@ function renderExperienceDashboard() {
                 experience.level,
                 experience.sect,
                 experience.department,
-                experience.province.join(' '),
+                getList(experience.province).join(' '),
                 experience.summary,
                 experience.mode,
-                experience.skills.join(' '),
+                getList(experience.skills).join(' '),
                 experience.end ? '' : 'actualidad'
             ].join(' '));
             return (!selectedSector || experience.sect === selectedSector)
@@ -233,10 +248,10 @@ function renderExperienceDashboard() {
         return;
     }
 
-    resultsContainer.innerHTML = results.map(function(experience) {
-        var detailId = 'experience-detail-' + experience.id;
-        var location = [experience.department, experience.province.join(', ')].join(' · ');
-        var skills = experience.skills.map(function(skill) {
+    resultsContainer.innerHTML = results.map(function(experience, index) {
+        var detailId = 'experience-detail-' + index;
+        var location = getExperienceLocation(experience) || 'Ubicación no especificada';
+        var skills = getList(experience.skills).map(function(skill) {
             return `<span class="skill-chip">${escapeHTML(skill)}</span>`;
         }).join('');
 
@@ -249,10 +264,11 @@ function renderExperienceDashboard() {
                     <span class="result-prompt">Ver detalles <span aria-hidden="true">+</span></span>
                 </button>
                 <div class="dashboard-result-details" id="${detailId}" hidden>
-                    <p>${escapeHTML(experience.summary)}</p>
+                    <p>${escapeHTML(experience.summary || '')}</p>
                     <div class="detail-chips">
-                        <span class="detail-chip">${escapeHTML(experience.sect)}</span>
-                        <span class="detail-chip">${escapeHTML(experience.mode)}</span>
+                        ${[experience.sect, experience.mode].filter(Boolean).map(function(value) {
+                            return `<span class="detail-chip">${escapeHTML(value)}</span>`;
+                        }).join('')}
                     </div>
                     <div class="skill-chips">${skills}</div>
                 </div>
@@ -336,16 +352,37 @@ function buildJourneyEntries() {
             title: experience.job,
             organization: experience.company,
             description: experience.summary,
-            tags: [experience.sect, experience.department].concat(experience.skills.slice(0, 4)),
-            extraSkillCount: Math.max(experience.skills.length - 4, 0)
+            tags: [experience.sect, experience.department].filter(Boolean)
+                .concat(getList(experience.skills).slice(0, 4)),
+            extraSkillCount: Math.max(getList(experience.skills).length - 4, 0)
         });
     });
 
+    var currentDate = Date.now();
     return entries.sort(function(first, second) {
-        var firstDate = first.start ? Date.parse(first.start + 'T00:00:00Z') : Infinity;
-        var secondDate = second.start ? Date.parse(second.start + 'T00:00:00Z') : Infinity;
-        return firstDate - secondDate;
+        var firstDate = getJourneySortDate(first, currentDate);
+        var secondDate = getJourneySortDate(second, currentDate);
+        return secondDate - firstDate;
     });
+}
+
+function getJourneySortDate(entry, currentDate) {
+    if (entry.planned) {
+        return -Infinity;
+    }
+
+    if (entry.type === 'experience') {
+        var startTimestamp = entry.start ? Date.parse(entry.start + 'T00:00:00Z') : -Infinity;
+        if (!Number.isFinite(startTimestamp)) {
+            return -Infinity;
+        }
+
+        return entry.end ? startTimestamp : Math.max(currentDate, startTimestamp);
+    }
+
+    var date = entry.end || entry.start;
+    var timestamp = date ? Date.parse(date + 'T00:00:00Z') : -Infinity;
+    return Number.isFinite(timestamp) ? timestamp : -Infinity;
 }
 
 function renderJourneyTimeline() {
@@ -376,7 +413,7 @@ function renderJourneyTimeline() {
                     <span class="timeline-type">${entry.type === 'education' ? 'Educación' : 'Experiencia'}</span>
                     <h3>${escapeHTML(entry.title)}</h3>
                     <p class="timeline-organization">${escapeHTML(entry.organization)}</p>
-                    <p class="timeline-description">${escapeHTML(entry.description)}</p>
+                    <p class="timeline-description">${escapeHTML(entry.description || '')}</p>
                     <div class="timeline-tags">${tags.join('')}</div>
                 </article>
             </li>
