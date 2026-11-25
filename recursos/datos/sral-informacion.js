@@ -2,8 +2,7 @@
 var information = {
     summary: [
         `<p><strong>Ingeniero Geógrafo titulado</strong> con experiencia en Sistemas de Información Geográfica (GIS) aplicados a servicios y proyectos de drenaje pluvial, catastro y desarrollo inmobiliario.
-        <br><br>
-        Experiencia en Sistemas de Información Geográfica, levantamiento fotogramétrico (RPAS), análisis de datos, automatización y desarrollo de soluciones web. Capacidad para desempeñarme en actividades de campo y gabinete, con comunicación efectiva y coordinación de equipos de trabajo orientados al cumplimiento de objetivos y resultados.</p>`
+        <br>Experiencia en Sistemas de Información Geográfica, levantamiento fotogramétrico (RPAS), análisis de datos, automatización y desarrollo de soluciones web. Capacidad para desempeñarme en actividades de campo y gabinete, con comunicación efectiva y coordinación de equipos de trabajo orientados al cumplimiento de objetivos y resultados.</p>`
     ],
 
     education: [
