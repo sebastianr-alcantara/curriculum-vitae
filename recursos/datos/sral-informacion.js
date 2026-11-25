@@ -3,7 +3,7 @@ var information = {
     summary: [
         `<p><strong>Ingeniero Geógrafo titulado</strong> con experiencia en Sistemas de Información Geográfica (GIS) aplicados a servicios y proyectos de drenaje pluvial, catastro y desarrollo inmobiliario.
         <br><br>
-        Experiencia en levantamiento topográfico mediante drones (RPAS), análisis de datos, automatización y desarrollo de soluciones web. Capacidad para desempeñarme en actividades de campo y gabinete, con comunicación efectiva y coordinación de equipos de trabajo orientados al cumplimiento de objetivos y resultados.</p>`
+        Experiencia en Sistemas de Información Geográfica, levantamiento fotogramétrico (RPAS), análisis de datos, automatización y desarrollo de soluciones web. Capacidad para desempeñarme en actividades de campo y gabinete, con comunicación efectiva y coordinación de equipos de trabajo orientados al cumplimiento de objetivos y resultados.</p>`
     ],
 
     education: [
@@ -78,26 +78,11 @@ var information = {
             job: "Pasante",
             level: "Practicante",
             start: "2020-01-03",
-            end: "2020-04-04",
+            end: "2020-04-02",
             skills: ["ArcGIS Pro","Investigación Científica", "Gestión Pública"]
         },
-
-        {
+	    {
             id: 2,
-            department: "Lima",
-            province: ["Lima"],
-            sect: "Area Natural Protegida",
-            company: "Autoridad Municipal de los Pantanos de Villa - Prohvilla",
-            mode:"Presencial",
-            summary: "Pasantía en el humedal Los Pantanos de Villa en la Oficina de Investigación Científica y Desarrollo de Proyectos",
-            job: "Pasante",
-            level: "Pasante",
-            start: "2020-01-03",
-            end: "2020-04-02",
-            skills: ["Proactivo"]
-        },
-	{
-            id: 3,
             department: "Piura",
             province: ["Paita"],
             sect: "Drenaje Pluvial",
@@ -110,9 +95,8 @@ var information = {
             end: "2022-04-07",
             skills: ["GIS", "QGIS", "Python", "Hidrología", "Modelamiento de Inundaciones", "Iber", "EVAR"]
         },
-
         {
-            id: 4,
+            id: 3,
             department: "Lima",
             province: ["Lima"],
             sect: "Telecomunicaciones",
@@ -125,9 +109,8 @@ var information = {
             end: "2023-09-30",
             skills: ["GIS", "Esri Apps", "Cartografía", "Gestión de Datos", "Coordinación"]
         },
-
         {
-            id: 5,
+            id: 4,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -140,9 +123,8 @@ var information = {
             end: "2023-09-30",
             skills: ["GIS", "CAD", "QGIS", "PostgreSQL", "Catastro Pluvial", "Gestión de Equipos", "Trabajo de Campo"]
         },
-
         {
-            id: 6,
+            id: 5,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -155,9 +137,8 @@ var information = {
             end: "2024-01-20",
             skills: ["GIS", "CAD", "Catastro Pluvial", "Trabajo de Campo", "Capacitación", "Presentaciones Ejecutivas"]
         },
-
         {
-            id: 7,
+            id: 6,
             department: "Lambayeque",
             province: ["Chiclayo", "Lambayeque"],
             sect: "Saneamiento de Agua y Desagüe",
@@ -170,9 +151,8 @@ var information = {
             end: "2024-12-31",
             skills: ["GIS", "PostgreSQL", "Catastro", "Análisis de Datos", "Supervisión", "Gestión de Entregables", "Trabajo de Campo"]
         },
-
         {
-            id: 8,
+            id: 7,
             department: "Lima",
             province: ["Lima"],
             sect: "Inmobiliario",
