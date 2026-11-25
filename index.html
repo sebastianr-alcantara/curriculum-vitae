@@ -13,7 +13,7 @@
 <body>
     <div id="contenedor" class="contenedor">
         <header class="header">
-            <img class="profile" src="recursos/imagenes/profile-photo.png">
+            <img class="profile" src="recursos/imagenes/profile-photo.png" alt="Foto de Sebastián Alcántara">
             <div class="professional">
                 <span class="name">Sebastián Alcántara</span>
                 <span class="career">Ingeniero Geógrafo</span>
@@ -38,84 +38,85 @@
             </div>
         </header>
         <main class="main">
-            <div id="sec-summary" class="section" state="activated">
-                <span class="title">Resumen Profesional</span>
+            <section id="sec-summary" class="section" state="activated" role="region" aria-labelledby="summary-title" aria-hidden="false">
+                <h2 class="title" id="summary-title">Resumen profesional</h2>
                 <span class="about-me"></span>
-                <div class="interactive">
-                    <div class="summary-modal" style="display: none;">
-                        <div class="modal-header">
-                            <span id="icon-location-header-summary-modal" class="material-symbols-outlined">location_on</span>
-                            <div class="title-header">MI EXPERIENCIA AQUÍ</div>
-                            <span id="icon-close-header-summary-modal" class="material-symbols-outlined">cancel</span>
-                        </div>
-                        <div class="modal-body"></div>
+                <div class="summary-highlights" aria-label="Experiencia y especialidades">
+                    <div class="experience-metric">
+                        <span class="metric-value" id="experience-years">0+</span>
+                        <span class="metric-label">años de experiencia profesional</span>
+                        <span class="metric-note" id="experience-period-note"></span>
                     </div>
-                    <div class="map">
-                        <div id="map-summary" class="geovisor"></div>
-                        <div class="legend">
-                            <div id="experiencie-class" class="class">
-                                <div class="symbol"></div>
-                                <div class="description">
-                                    Departamentos relacionados a donde he laborado
+                    <div class="expertise-summary">
+                        <h3>¿En qué puedo aportar?</h3>
+                        <p>Experiencia técnica en estas áreas:</p>
+                        <div class="expertise-list"></div>
+                    </div>
+                </div>
+                <div class="experience-dashboard">
+                    <div class="dashboard-toolbar">
+                        <div class="dashboard-heading">
+                            <h3>Explora mi experiencia</h3>
+                            <p>Busca un tema o filtra por área y ubicación.</p>
+                        </div>
+                        <label class="dashboard-search" for="experience-search">
+                            <span>Buscar experiencia</span>
+                            <input id="experience-search" type="search" placeholder="Ej.: QGIS, drenaje, coordinación" autocomplete="off">
+                        </label>
+                    </div>
+                    <div class="dashboard-filters">
+                        <label for="experience-sector">Área</label>
+                        <select id="experience-sector">
+                            <option value="">Todas las áreas</option>
+                        </select>
+                        <label for="experience-department">Departamento</label>
+                        <select id="experience-department">
+                            <option value="">Todos los departamentos</option>
+                        </select>
+                        <button id="clear-experience-filters" type="button">Limpiar filtros</button>
+                        <span id="experience-result-count" role="status" aria-live="polite"></span>
+                    </div>
+                    <div class="dashboard-content">
+                        <div id="experience-results" class="experience-results" aria-label="Resultados de experiencia"></div>
+                        <div class="map-panel">
+                            <div id="map-summary" class="geovisor" role="img" aria-label="Mapa de Perú. Selecciona un departamento para filtrar la experiencia."></div>
+                            <p class="map-hint">Selecciona un departamento en el mapa para filtrar los proyectos.</p>
+                            <div class="legend">
+                                <div id="experience-class" class="class">
+                                    <div class="symbol"></div>
+                                    <div class="description">Departamentos con experiencia</div>
                                 </div>
-                            </div>
-                            <div id="unexperiencie-class" class="class">
-                                <div class="symbol"></div>
-                                <div class="description">
-                                    Otros departamentos donde podría laborar
+                                <div id="other-departments-class" class="class">
+                                    <div class="symbol"></div>
+                                    <div class="description">Otros departamentos</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div id="sec-education" class="section" state="deactivated">
-                <div class="time-line">
-                    <div class="year-mark">
-                        <div class="line"></div>
-                        <div class="circle">
-                            <span>2026</span>
-                        </div>
+            </section>
+            <section id="sec-journey" class="section" state="deactivated" role="region" aria-labelledby="journey-title" aria-hidden="true">
+                <div class="journey-header">
+                    <div>
+                        <h2 class="section-heading" id="journey-title">Mi trayectoria</h2>
+                        <p class="journey-intro">Un recorrido desde mi formación hasta los proyectos que han impulsado mi carrera.</p>
                     </div>
-                    <div class="year-mark">
-                        <div class="line"></div>
-                        <div class="circle">
-                            <span>2025</span>
-                        </div>
-                    </div>
-                    <div class="year-mark">
-                        <div class="line"></div>
-                        <div class="circle">
-                            <span>2024</span>
-                        </div>
-                    </div>
-                    <div class="year-mark">
-                        <div class="line"></div>
-                        <div class="circle">
-                            <span>2023</span>
-                        </div>
-                    </div>
-                    <div class="year-mark">
-                        <div class="line"></div>
-                        <div class="circle">
-                            <span>2022</span>
-                        </div>
+                    <div class="journey-filters" role="group" aria-label="Filtrar trayectoria">
+                        <button type="button" data-timeline-filter="all" aria-pressed="true">Todo</button>
+                        <button type="button" data-timeline-filter="experience" aria-pressed="false">Experiencia</button>
+                        <button type="button" data-timeline-filter="education" aria-pressed="false">Educación</button>
                     </div>
                 </div>
-            </div>
-            <div id="sec-experience" class="section" state="deactivated">
-                Experiencia
-            </div>
+                <ol class="journey-timeline" aria-label="Cronología de educación y experiencia"></ol>
+            </section>
         </main>
-        <footer class="footer">
-            <button id="btn-summary">Resumen</button>
-            <button id="btn-education">Educación</button>
-            <button id="btn-experience">Experiencia</button>
-        </footer>
+        <nav class="footer" aria-label="Secciones del currículum">
+            <button id="btn-summary" type="button" aria-controls="sec-summary" aria-pressed="true" state="activated">Resumen</button>
+            <button id="btn-journey" type="button" aria-controls="sec-journey" aria-pressed="false" state="deactivated">Mi trayectoria</button>
+        </nav>
     </div>
     <!-- Datos -->
     <script src="recursos/datos/inei-departamentos.js"></script>
-    <script src="recursos/datos/inei-provincias.js"></script>
     <script src="recursos/datos/sral-informacion.js"></script>
     <!-- Librerias -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

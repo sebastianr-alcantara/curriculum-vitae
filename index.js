@@ -2,318 +2,416 @@
 // RESUMEN PROFESIONAL
 // ==============================
 var summaryMap;
-var provinceSummaryMap = null;
-var featureSelected = null;
-var summaryModalControl = null;
+var departmentLayer;
 var departamentosExperiencia = [];
+var selectedDepartment = '';
 
 function initializeMapSummary() {
-    // Creamos el mapa
+    document.querySelector('.about-me').insertAdjacentHTML('beforeend', information.summary[0]);
+
+    departamentosExperiencia = Array.from(new Set(information.experience.map(function(experience) {
+        return experience.department;
+    })));
+
     summaryMap = L.map(
-        'map-summary', 
+        'map-summary',
         {
-            center: [-9.19, -75.0152],
-            zoomSnap: 0.1,
-            zoomDelta: 0.1,
             dragging: false,
             scrollWheelZoom: false,
             zoomControl: false,
-            doubleClickZoom: false
+            doubleClickZoom: false,
+            keyboard: false,
+            touchZoom: false,
+            boxZoom: false,
+            zoomSnap: 0.1,
+            zoomDelta: 0.2
         }
     );
 
-    // Inicializamos el modal antes de usarlo
-    summaryModalControl = initializeSummaryModal();
-
-    // Asignamos mi resumen profesional
-    var acercaDeMiContenedor = document.querySelector('.about-me'); 
-    var acercaDeMiTexto = information.summary[0];
-
-    acercaDeMiContenedor.insertAdjacentHTML('beforeend', acercaDeMiTexto);
-
-    // Determinamos los departamentos con experiencia
-    information.experience.forEach(
-        function(experiencia) {
-            if (!departamentosExperiencia.includes(experiencia.department)) {
-                departamentosExperiencia.push(experiencia.department)
-            }
-        }
-    );
-
-    // Cargamos el Layer por defecto
-    var departamentosLayer = L.geoJSON(
+    departmentLayer = L.geoJSON(
         geojsonDepartamentos,
         {
-            style: function(feature) {
-                var nombreDepartamentoGeojson = feature.properties.nombdep; // Obtenemos el nombre del departamento
-                var verificarNombreDepartamento = departamentosExperiencia.includes(nombreDepartamentoGeojson) // Verificamos el nombre del departamento
-                return {
-                    color: 'var(--colour-primary-ultradark)',
-                    weight: 1,
-                    fillColor: verificarNombreDepartamento ? 'var(--colour-primary-dark)' : 'var(--colour-primary-ultralight)', // Oscuro cuando hay experiencia
-                    fillOpacity: verificarNombreDepartamento ? 0.7 : 0.2
-                }
-            },
+            style: getDefaultStyle,
             onEachFeature: function(feature, layer) {
-                // Verificamos si el departamento tiene experiencia relacionada
-                var nombreDepartamento = feature.properties.nombdep;
-                var haveExperience = departamentosExperiencia.includes(nombreDepartamento);
-                // Efecto seleccionado
-                layer.on(
-                    'click',
-                    function() {
-                        // Ignoramos si no hay experiencia
-                        if (!haveExperience) {
-                            return
-                        }
-                        // Buscamos todas las provincias con experiencia
-                        var provinciasExperiencia = [];
-                        information.experience.forEach(
-                                function(experiencia) {
-                                    if (experiencia.department === nombreDepartamento) {
-                                        experiencia.province.forEach(
-                                            function(provincia) {
-                                                if (!provinciasExperiencia.includes(provincia)) {
-                                                    provinciasExperiencia.push(provincia);
-                                                }
-                                            }
-                                        );
-                                    }
-                                }
-                        );
-                        // Si el feature ya se encuentra seleccionado, lo deseleccionamos
-                        if (featureSelected === this) {
-                            var defaultStyleFeature = getDefaultStyle(feature);
-                            this.setStyle(defaultStyleFeature);
-                            featureSelected = null;
-                            summaryModalControl.hide();
-                        } else {
-                            // Si el feature no esta seleccionado, lo seleccionamos
-                            if (featureSelected) {
-                                var defaultStyleFeature = getDefaultStyle(featureSelected.feature);
-                                featureSelected.setStyle(defaultStyleFeature);
-                            } 
-                            this.setStyle({
-                                weight: 4
-                            });
-
-                            featureSelected = this
-                            summaryModalControl.show(nombreDepartamento, provinciasExperiencia, feature)
-                        }
+                var department = feature.properties.nombdep;
+                layer.bindTooltip(department, { sticky: true });
+                layer.on('click', function() {
+                    setSelectedDepartment(selectedDepartment === department ? '' : department);
+                });
+                layer.on('mouseover', function() {
+                    if (selectedDepartment !== department) {
+                        this.setStyle({ weight: 2.5 });
                     }
-                );
-                // Efecto Hover solo para los departamentos con experiencia
-                if (haveExperience) {
-                    layer.on(
-                        'mouseover',
-                        function() {
-                            if (featureSelected != this) {
-                                this.setStyle({
-                                    weight: 4
-                                });
-                            }    
-                        }
-                    );
-                    layer.on(
-                        'mouseout',
-                        function() {
-                            if (featureSelected != this) {
-                                var defaultStyleFeature = getDefaultStyle(feature);
-                                this.setStyle(defaultStyleFeature);
-                            }
-                        }
-                    );
-                }
-
+                });
+                layer.on('mouseout', function() {
+                    this.setStyle(getDefaultStyle(feature));
+                });
             }
         }
     ).addTo(summaryMap);
-    
-    summaryMap.fitBounds(departamentosLayer.getBounds());
+
+    requestAnimationFrame(fitSummaryMap);
 };
 
-function initializeSummaryModal() {
-    // Seleccionamos los elementos del modal que son configurables
-    var summaryModalContainer = document.querySelector('.summary-modal');
-    var summaryModalBody = summaryModalContainer.querySelector('.modal-body');
-    var closeSummaryModalButton = summaryModalContainer.querySelector('#icon-close-header-summary-modal');
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, function(character) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[character];
+    });
+}
 
-    // Funcion para mostrar el modal
-    function showSummaryModal(departamento, provincias, feature) {
-        summaryModalContainer.style.display = 'flex';
-        
-        // Mostramos todas las provincias con experiencia
-        summaryModalBody.innerHTML = '';
+function formatEducationDate(date) {
+    if (!date) {
+        return '';
+    }
 
-        summaryModalBody.innerHTML += `
-            <div class="place-work">
-                <strong>Departamento:&nbsp;</strong>${departamento}
-            </div>
-            <div class="place-work">
-                <strong>Provincia:&nbsp;</strong>${provincias.join(', ')}
-            </div>
-            <div id="province-map-summary" class="geovisor"></div>
-            <div class="experience-in-department"></div>
-        `;
+    return new Intl.DateTimeFormat('es-PE', {
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC'
+    }).format(new Date(date + 'T00:00:00'));
+}
 
-        // Creamos el mapa provincial
-        provinceSummaryMap = L.map(
-            'province-map-summary', 
-            {
-                center: [-9.19, -75.0152],
-                zoomSnap: 0.4,
-                zoomDelta: 0.4,
-                dragging: false,
-                scrollWheelZoom: false,
-                zoomControl: false,
-                doubleClickZoom: false
-            }
-        );
+function formatExperienceDate(date) {
+    return date ? formatEducationDate(date) : '';
+}
 
-        provinceSummaryMap.eachLayer(function(layer) {
-            provinceSummaryMap.removeLayer(layer);
-        });
+function calculateExperienceYears(experiences, asOfDate) {
+    var today = asOfDate || new Date();
+    var todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    var dayInMilliseconds = 24 * 60 * 60 * 1000;
+    var periods = experiences.map(function(experience) {
+        var start = Date.parse(experience.start + 'T00:00:00Z');
+        var end = Date.parse((experience.end || new Date(todayUTC).toISOString().slice(0, 10)) + 'T00:00:00Z');
 
-        // Agregamos el departamento seleccionado
-        var departamentSelectedLayer = L.geoJSON(
-            feature,
-            {
-                style: {
-                    color: 'var(--colour-primary-ultradark)',
-                    weight: 2,
-                    fillColor: 'transparent',
-                    fillOpacity: 0
-                }
-            }
-        ).addTo(provinceSummaryMap);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+            throw new Error('Invalid date range in professional experience: ' + experience.company);
+        }
 
-        // Filtramos las provincias seleccionadas
-        var provincesByDepartmentSelected = {
-            type: 'FeatureCollection',
-            features: geojsonProvincias.features.filter(
-                function(provincia) {
-                    return provincia.properties.nombdep === departamento;
-                }
-            )
+        return {
+            start: start,
+            end: Math.min(end, todayUTC)
         };
-
-        // Agregamos las provincias del departamento
-        var provincesSelectedLayer = L.geoJSON(
-            provincesByDepartmentSelected,
-            {
-                style: function(feature) {
-                    var nombreProvinciaGeojson = feature.properties.nombprov;
-                    var verificarNombreProvincia = provincias.includes(nombreProvinciaGeojson);
-
-                    return {
-                        color: 'var(--colour-primary-ultradark)',
-                        weight: 1, 
-                        fillColor: verificarNombreProvincia ? 'var(--colour-primary-dark)' : 'var(--colour-primary-ultralight)',
-                        fillOpacity: verificarNombreProvincia ? 0.7 : 0.2
-                    };
-                },
-            }
-        )
-        
-        provincesSelectedLayer.addTo(provinceSummaryMap);
-
-        // Ajustamos el mapa al departamento seleccionado
-        provinceSummaryMap.fitBounds(
-            provincesSelectedLayer.getBounds()
-        );
-
-        summaryMap.invalidateSize();
-
-        // Listamos la experiencia por departamento
-        var departmentExperience = information.experience
-            .filter(function (experiencia) {
-                return experiencia.department === departamento
-            })
-            .sort(function (a, b) {
-                return new Date(b.end) - new Date(a.end);
-            });
-
-        var departmentExperienceContainer = document.querySelector('.experience-in-department');
-
-        departmentExperienceContainer.innerHTML = departmentExperience.map(
-            function (experience) {
-                return `
-                    <div class='single-experience'>
-                        <div class='header-experience'>
-                            <div class='company'>${experience.company}</div>
-                            <div class='date'>
-                                <span>${experience.start.split('-')[1]}/${experience.start.split('-')[0]}</span>
-                                <span>-</span>
-                                <span>${experience.end.split('-')[1]}/${experience.end.split('-')[0]}</span>
-                            </div>
-                        </div>
-                        <div class='summary-experience'>${experience.summary}</div>
-                    </div>
-                `;
-            }
-        ).join('');
-    }
-
-    // Funcion para ocultar el modal
-    function hideSummaryModal() {
-        // Ocultamos el modal
-        summaryModalContainer.style.display = 'none';
-
-        // Restauramos el estilo del departamento seleccionado
-        if (featureSelected) {
-            featureSelected.setStyle(
-                getDefaultStyle(featureSelected.feature)
-            );
-
-            featureSelected = null;
-        }
-
-        // Eliminamos el mapa provincial
-        if (provinceSummaryMap) {
-            provinceSummaryMap.remove();
-            provinceSummaryMap = null;
-        }
-
-        // Actualizamos el tamaño del mapa principal
-        setTimeout(function() {
-            if (summaryMap) {
-                summaryMap.invalidateSize();
-            }
-        }, 100);
-    }
-
-    closeSummaryModalButton.addEventListener('click', function () {
-        hideSummaryModal();
+    }).filter(function(period) {
+        return period.start <= todayUTC;
+    }).sort(function(first, second) {
+        return first.start - second.start;
     });
 
-    // Retornamos las funciones
-    return {
-        show: showSummaryModal,
-        hide: hideSummaryModal
-    };
-};
+    var mergedPeriods = [];
+    periods.forEach(function(period) {
+        var previousPeriod = mergedPeriods[mergedPeriods.length - 1];
+        if (previousPeriod && period.start <= previousPeriod.end + dayInMilliseconds) {
+            previousPeriod.end = Math.max(previousPeriod.end, period.end);
+        } else {
+            mergedPeriods.push({ start: period.start, end: period.end });
+        }
+    });
 
-// ==============================
-// EDUCACIÓN PROFESIONAL
-// ==============================
+    var totalDays = mergedPeriods.reduce(function(days, period) {
+        return days + Math.floor((period.end - period.start) / dayInMilliseconds) + 1;
+    }, 0);
 
+    return Math.floor(totalDays / 365.2425);
+}
 
+function renderProfileHighlights() {
+    var experienceYears = calculateExperienceYears(information.experience);
+    var experienceCount = information.experience.length;
+    var yearsLabel = document.querySelector('#experience-years');
+    var periodNote = document.querySelector('#experience-period-note');
+    var expertiseList = document.querySelector('.expertise-list');
 
-// ==============================
-// EXPERIENCIA PROFESIONAL
-// ==============================
+    yearsLabel.textContent = experienceYears + '+';
+    periodNote.textContent = experienceCount + ' experiencias · periodos simultáneos contados una sola vez';
+    expertiseList.innerHTML = information.competencies.technical.map(function(competency) {
+        return `<span class="expertise-chip">${escapeHTML(competency.category)}</span>`;
+    }).join('');
+}
+
+function normalizeSearch(value) {
+    return value
+        .toLocaleLowerCase('es')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function initializeExperienceDashboard() {
+    var sectorSelect = document.querySelector('#experience-sector');
+    var departmentSelect = document.querySelector('#experience-department');
+    var searchInput = document.querySelector('#experience-search');
+    var clearButton = document.querySelector('#clear-experience-filters');
+    var sectors = Array.from(new Set(information.experience.map(function(experience) {
+        return experience.sect;
+    }))).sort();
+    var departments = Array.from(new Set(information.experience.map(function(experience) {
+        return experience.department;
+    }))).sort();
+
+    sectors.forEach(function(sector) {
+        var option = document.createElement('option');
+        option.value = sector;
+        option.textContent = sector;
+        sectorSelect.appendChild(option);
+    });
+
+    departments.forEach(function(department) {
+        var option = document.createElement('option');
+        option.value = department;
+        option.textContent = department;
+        departmentSelect.appendChild(option);
+    });
+
+    searchInput.addEventListener('input', renderExperienceDashboard);
+    sectorSelect.addEventListener('change', renderExperienceDashboard);
+    departmentSelect.addEventListener('change', function() {
+        setSelectedDepartment(departmentSelect.value);
+    });
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        sectorSelect.value = '';
+        setSelectedDepartment('');
+        searchInput.focus();
+    });
+
+    document.querySelector('#experience-results').addEventListener('click', function(event) {
+        var trigger = event.target.closest('.dashboard-result-toggle');
+        if (!trigger) {
+            return;
+        }
+
+        var expanded = trigger.getAttribute('aria-expanded') === 'true';
+        trigger.setAttribute('aria-expanded', String(!expanded));
+        document.querySelector('#' + trigger.getAttribute('aria-controls')).hidden = expanded;
+    });
+
+    renderExperienceDashboard();
+}
+
+function renderExperienceDashboard() {
+    var query = normalizeSearch(document.querySelector('#experience-search').value)
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+    var selectedSector = document.querySelector('#experience-sector').value;
+    var selectedArea = document.querySelector('#experience-department').value;
+    var results = information.experience
+        .filter(function(experience) {
+            var searchableText = normalizeSearch([
+                experience.job,
+                experience.company,
+                experience.level,
+                experience.sect,
+                experience.department,
+                experience.province.join(' '),
+                experience.summary,
+                experience.mode,
+                experience.skills.join(' '),
+                experience.end ? '' : 'actualidad'
+            ].join(' '));
+            return (!selectedSector || experience.sect === selectedSector)
+                && (!selectedArea || experience.department === selectedArea)
+                && query.every(function(term) {
+                    return searchableText.includes(term);
+                });
+        })
+        .sort(function(first, second) {
+            return new Date(second.start) - new Date(first.start);
+        });
+    var resultsContainer = document.querySelector('#experience-results');
+
+    document.querySelector('#experience-result-count').textContent =
+        results.length + (results.length === 1 ? ' experiencia encontrada' : ' experiencias encontradas');
+
+    if (results.length === 0) {
+        resultsContainer.innerHTML = '<p class="empty-results">No hay experiencias que coincidan. Prueba otro término o limpia los filtros.</p>';
+        return;
+    }
+
+    resultsContainer.innerHTML = results.map(function(experience) {
+        var detailId = 'experience-detail-' + experience.id;
+        var location = [experience.department, experience.province.join(', ')].join(' · ');
+        var skills = experience.skills.map(function(skill) {
+            return `<span class="skill-chip">${escapeHTML(skill)}</span>`;
+        }).join('');
+
+        return `
+            <article class="dashboard-result">
+                <button class="dashboard-result-toggle" type="button" aria-expanded="false" aria-controls="${detailId}">
+                    <span class="result-company">${escapeHTML(experience.company)}</span>
+                    <span class="result-job">${escapeHTML(experience.job)}</span>
+                    <span class="result-meta">${formatEducationDate(experience.start)} — ${formatExperienceDate(experience.end) || 'Actualidad'} · ${escapeHTML(location)}</span>
+                    <span class="result-prompt">Ver detalles <span aria-hidden="true">+</span></span>
+                </button>
+                <div class="dashboard-result-details" id="${detailId}" hidden>
+                    <p>${escapeHTML(experience.summary)}</p>
+                    <div class="detail-chips">
+                        <span class="detail-chip">${escapeHTML(experience.sect)}</span>
+                        <span class="detail-chip">${escapeHTML(experience.mode)}</span>
+                    </div>
+                    <div class="skill-chips">${skills}</div>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+function setSelectedDepartment(department) {
+    selectedDepartment = department;
+    document.querySelector('#experience-department').value = department;
+
+    if (departmentLayer) {
+        departmentLayer.eachLayer(function(layer) {
+            layer.setStyle(getDefaultStyle(layer.feature));
+        });
+    }
+
+    renderExperienceDashboard();
+}
+
+function buildJourneyEntries() {
+    var entries = [];
+    var educationData = information.education[0];
+
+    educationData.school_education.forEach(function(study) {
+        entries.push({
+            type: 'education',
+            start: study.start,
+            end: study.end,
+            title: study.level,
+            organization: study.institution,
+            description: 'Formación escolar finalizada.',
+            tags: [study.state]
+        });
+    });
+
+    educationData.higher_education.forEach(function(studies) {
+        var undergraduate = studies.undergraduated;
+        var postgraduate = studies.postgraduated;
+
+        entries.push({
+            type: 'education',
+            start: undergraduate.start,
+            end: undergraduate.bachelor || undergraduate.end,
+            title: undergraduate.career,
+            organization: undergraduate.university,
+            description: undergraduate.thesys
+                ? 'Formación universitaria y trabajo de investigación: ' + undergraduate.thesys + '.'
+                : 'Formación universitaria en ' + undergraduate.career + '.',
+            tags: [undergraduate.bachelor ? 'Grado de bachiller' : '', undergraduate.state].filter(Boolean)
+        });
+
+        if (undergraduate.title) {
+            entries.push({
+                type: 'education',
+                start: undergraduate.title,
+                title: 'Obtención del título profesional',
+                organization: undergraduate.university,
+                description: 'Título profesional de ' + undergraduate.career + '.',
+                tags: ['Ingeniería Geográfica']
+            });
+        }
+
+        entries.push({
+            type: 'education',
+            start: postgraduate.start,
+            title: postgraduate.level + ' · ' + postgraduate.specialization,
+            organization: postgraduate.university,
+            description: postgraduate.state,
+            planned: !postgraduate.start,
+            tags: ['Próximo paso']
+        });
+    });
+
+    information.experience.forEach(function(experience) {
+        entries.push({
+            type: 'experience',
+            start: experience.start,
+            end: experience.end,
+            title: experience.job,
+            organization: experience.company,
+            description: experience.summary,
+            tags: [experience.sect, experience.department].concat(experience.skills.slice(0, 4)),
+            extraSkillCount: Math.max(experience.skills.length - 4, 0)
+        });
+    });
+
+    return entries.sort(function(first, second) {
+        var firstDate = first.start ? Date.parse(first.start + 'T00:00:00Z') : Infinity;
+        var secondDate = second.start ? Date.parse(second.start + 'T00:00:00Z') : Infinity;
+        return firstDate - secondDate;
+    });
+}
+
+function renderJourneyTimeline() {
+    var timeline = document.querySelector('.journey-timeline');
+    timeline.innerHTML = buildJourneyEntries().map(function(entry) {
+        var dateLabel;
+        if (entry.planned) {
+            dateLabel = 'Próximo paso · En planificación';
+        } else if (entry.start && entry.end) {
+            dateLabel = formatEducationDate(entry.start) + ' — ' + formatEducationDate(entry.end);
+        } else if (entry.end) {
+            dateLabel = formatEducationDate(entry.end);
+        } else {
+            dateLabel = formatEducationDate(entry.start) + (entry.type === 'experience' ? ' — Actualidad' : '');
+        }
+
+        var tags = (entry.tags || []).map(function(tag) {
+            return `<span class="timeline-tag">${escapeHTML(tag)}</span>`;
+        });
+        if (entry.extraSkillCount) {
+            tags.push(`<span class="timeline-tag">+${entry.extraSkillCount} habilidades</span>`);
+        }
+
+        return `
+            <li class="timeline-event timeline-event-${entry.type}" data-timeline-type="${entry.type}">
+                <article class="timeline-card">
+                    <span class="timeline-date">${escapeHTML(dateLabel)}</span>
+                    <span class="timeline-type">${entry.type === 'education' ? 'Educación' : 'Experiencia'}</span>
+                    <h3>${escapeHTML(entry.title)}</h3>
+                    <p class="timeline-organization">${escapeHTML(entry.organization)}</p>
+                    <p class="timeline-description">${escapeHTML(entry.description)}</p>
+                    <div class="timeline-tags">${tags.join('')}</div>
+                </article>
+            </li>
+        `;
+    }).join('');
+}
+
+function initializeTimelineFilters() {
+    var filterButtons = document.querySelectorAll('[data-timeline-filter]');
+    filterButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var filter = button.getAttribute('data-timeline-filter');
+            filterButtons.forEach(function(filterButton) {
+                filterButton.setAttribute('aria-pressed', String(filterButton === button));
+            });
+            document.querySelectorAll('.timeline-event').forEach(function(event) {
+                event.hidden = filter !== 'all' && event.getAttribute('data-timeline-type') !== filter;
+            });
+        });
+    });
+}
 
 // ==============================
 // FUNCIONES AUXILIARES
 // ==============================
 function changeSectionView(buttonIDSelected, sectionIDSelected) {
     // Activamos y desactivamos los botones
-    const buttons = document.querySelectorAll('footer button');
+    const buttons = document.querySelectorAll('.footer button');
     buttons.forEach(btn => {
         if (btn.id === buttonIDSelected) {
             btn.setAttribute('state', 'activated');
+            btn.setAttribute('aria-pressed', 'true');
         } else {
             btn.setAttribute('state', 'deactivated');
+            btn.setAttribute('aria-pressed', 'false');
         }
     });
     // Activamos y desactivamos las secciones
@@ -321,30 +419,40 @@ function changeSectionView(buttonIDSelected, sectionIDSelected) {
     sections.forEach(sect => {
         if (sect.id === sectionIDSelected) {
             sect.setAttribute('state', 'activated');
+            sect.setAttribute('aria-hidden', 'false');
         } else {
             sect.setAttribute('state', 'deactivated');
+            sect.setAttribute('aria-hidden', 'true');
         }
     });
-    // Refrescamos el mapa cuando se vuelve a resumen
     if (sectionIDSelected === 'sec-summary' && summaryMap) {
-        setTimeout(
-            function() {
-                summaryMap.invalidateSize()
-            },
-            100
-        );
+        requestAnimationFrame(fitSummaryMap);
     }
+}
+
+function fitSummaryMap() {
+    if (!summaryMap || !departmentLayer) {
+        return;
+    }
+
+    summaryMap.invalidateSize({ pan: false });
+    summaryMap.fitBounds(departmentLayer.getBounds(), {
+        padding: [18, 18],
+        maxZoom: 5,
+        animate: false
+    });
 }
 
 function getDefaultStyle(feature) {
     var nombre = feature.properties.nombdep;
     var tieneExperiencia = departamentosExperiencia.includes(nombre);
+    var isSelected = selectedDepartment === nombre;
     
     return {
-        color: 'var(--colour-primary-ultradark)',
-        weight: 1,
-        fillColor: tieneExperiencia ? 'var(--colour-primary-dark)' : 'var(--colour-primary-ultralight)',
-        fillOpacity: tieneExperiencia ? 0.7 : 0.2
+        color: isSelected ? '#D6A84F' : '#102A43',
+        weight: isSelected ? 3 : 1,
+        fillColor: tieneExperiencia ? '#176B87' : '#DCE7ED',
+        fillOpacity: tieneExperiencia ? 0.82 : 0.55
     };
 }
 
@@ -352,11 +460,16 @@ function getDefaultStyle(feature) {
 // INICIALIZACION DEL SISTEMA
 // ==============================
 document.addEventListener('DOMContentLoaded', () => {
-    // Resumen Profesional
     initializeMapSummary();
+    renderProfileHighlights();
+    initializeExperienceDashboard();
+    renderJourneyTimeline();
+    initializeTimelineFilters();
+    window.addEventListener('resize', function() {
+        requestAnimationFrame(fitSummaryMap);
+    });
 
-    // Cambio de Seccion
-    const buttons = document.querySelectorAll('footer button');
+    const buttons = document.querySelectorAll('.footer button');
     changeSectionView('btn-summary', 'sec-summary');
     buttons.forEach(button => {
         button.addEventListener('click', () => {
