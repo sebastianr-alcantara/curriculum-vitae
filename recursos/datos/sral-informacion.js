@@ -83,7 +83,21 @@ var information = {
         },
 
         {
-            id: 1,
+            id: 2,
+            department: "Lima",
+            province: ["Lima"],
+            sect: "Area Natural Protegida",
+            company: "Autoridad Municipal de los Pantanos de Villa - Prohvilla",
+            mode:"Presencial",
+            summary: "Pasantía en el humedal Los Pantanos de Villa en la Oficina de Investigación Científica y Desarrollo de Proyectos",
+            job: "Pasante",
+            level: "Pasante",
+            start: "2020-01-03",
+            end: "2020-04-02",
+            skills: ["Proactivo"]
+        },
+	{
+            id: 3,
             department: "Piura",
             province: ["Paita"],
             sect: "Drenaje Pluvial",
@@ -98,7 +112,7 @@ var information = {
         },
 
         {
-            id: 2,
+            id: 4,
             department: "Lima",
             province: ["Lima"],
             sect: "Telecomunicaciones",
@@ -113,7 +127,7 @@ var information = {
         },
 
         {
-            id: 3,
+            id: 5,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -128,7 +142,7 @@ var information = {
         },
 
         {
-            id: 4,
+            id: 6,
             department: "Cusco",
             province: ["Cusco"],
             sect: "Drenaje Pluvial",
@@ -143,7 +157,7 @@ var information = {
         },
 
         {
-            id: 5,
+            id: 7,
             department: "Lambayeque",
             province: ["Chiclayo", "Lambayeque"],
             sect: "Saneamiento de Agua y Desagüe",
@@ -158,7 +172,7 @@ var information = {
         },
 
         {
-            id: 6,
+            id: 8,
             department: "Lima",
             province: ["Lima"],
             sect: "Inmobiliario",
@@ -177,11 +191,11 @@ var information = {
         technical: [
             {
                 category: "GIS y Teledetección",
-                skills: ["ArcGIS Pro", "QGIS", "Google Earth Engine (GEE)"]
+                skills: ["ArcGIS Pro", "QGIS", "Google Earth Engine"]
             },
             {
                 category: "Base de Datos",
-                skills: ["PostgreSQL", "PostGIS"]
+                skills: ["PostgreSQL"]
             },
             {
                 category: "Dibujo Técnico",
