@@ -518,6 +518,7 @@ body {
 }
 
 .contenedor .main .section[id="sec-summary"] {
+    flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
     overflow-x: hidden;

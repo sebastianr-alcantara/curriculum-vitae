@@ -457,6 +457,7 @@ function changeSectionView(buttonIDSelected, sectionIDSelected) {
         if (sect.id === sectionIDSelected) {
             sect.setAttribute('state', 'activated');
             sect.setAttribute('aria-hidden', 'false');
+            sect.scrollTop = 0;
         } else {
             sect.setAttribute('state', 'deactivated');
             sect.setAttribute('aria-hidden', 'true');
