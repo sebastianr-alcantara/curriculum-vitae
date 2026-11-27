@@ -81,7 +81,7 @@ function formatExperienceDate(date) {
     return date ? formatEducationDate(date) : '';
 }
 
-function calculateExperienceYears(experiences, asOfDate) {
+function calculateExperienceDays(experiences, asOfDate) {
     var today = asOfDate || new Date();
     var todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
     var dayInMilliseconds = 24 * 60 * 60 * 1000;
@@ -113,25 +113,51 @@ function calculateExperienceYears(experiences, asOfDate) {
         }
     });
 
-    var totalDays = mergedPeriods.reduce(function(days, period) {
+    return mergedPeriods.reduce(function(days, period) {
         return days + Math.floor((period.end - period.start) / dayInMilliseconds) + 1;
     }, 0);
+}
 
-    return Math.floor(totalDays / 365.2425);
+function calculateExperienceYears(experiences, asOfDate) {
+    return Math.floor(calculateExperienceDays(experiences, asOfDate) / 365.2425);
+}
+
+function formatExperienceDuration(days) {
+    if (!days) {
+        return 'Sin experiencia';
+    }
+
+    var totalMonths = Math.round(days * 12 / 365.2425);
+    if (!totalMonths) {
+        return 'Menos de 1 mes';
+    }
+
+    var years = Math.floor(totalMonths / 12);
+    var months = totalMonths % 12;
+    return [
+        years ? years + (years === 1 ? ' año' : ' años') : '',
+        months ? months + (months === 1 ? ' mes' : ' meses') : ''
+    ].filter(Boolean).join(' y ');
 }
 
 function renderProfileHighlights() {
-    var experienceYears = calculateExperienceYears(information.experience);
-    var experienceCount = information.experience.length;
+    var today = new Date();
+    var experienceYears = calculateExperienceYears(information.experience, today);
     var yearsLabel = document.querySelector('#experience-years');
-    var periodNote = document.querySelector('#experience-period-note');
-    var expertiseList = document.querySelector('.expertise-list');
+    information.experience.forEach(function(experience) {
+        if (experience.institution_type !== 'public' && experience.institution_type !== 'private') {
+            throw new Error('Invalid institution type in professional experience: ' + experience.company);
+        }
+    });
 
     yearsLabel.textContent = experienceYears + '+';
-    periodNote.textContent = experienceCount + ' experiencias · periodos simultáneos contados una sola vez';
-    expertiseList.innerHTML = information.competencies.technical.map(function(competency) {
-        return `<span class="expertise-chip">${escapeHTML(competency.category)}</span>`;
-    }).join('');
+    ['public', 'private'].forEach(function(type) {
+        var experiences = information.experience.filter(function(experience) {
+            return experience.institution_type === type;
+        });
+        document.querySelector('#' + type + '-experience-duration').textContent =
+            formatExperienceDuration(calculateExperienceDays(experiences, today));
+    });
 }
 
 function normalizeSearch(value) {
@@ -300,6 +326,7 @@ function buildJourneyEntries() {
             start: study.start,
             end: study.end,
             title: study.level,
+            level: study.level,
             organization: study.institution,
             description: 'Formación escolar finalizada.',
             tags: [study.state]
@@ -313,22 +340,36 @@ function buildJourneyEntries() {
         entries.push({
             type: 'education',
             start: undergraduate.start,
-            end: undergraduate.bachelor || undergraduate.end,
+            end: undergraduate.end,
             title: undergraduate.career,
+            career: undergraduate.career,
+            level: undergraduate.level,
             organization: undergraduate.university,
-            description: undergraduate.thesys
-                ? 'Formación universitaria y trabajo de investigación: ' + undergraduate.thesys + '.'
-                : 'Formación universitaria en ' + undergraduate.career + '.',
-            tags: [undergraduate.bachelor ? 'Grado de bachiller' : '', undergraduate.state].filter(Boolean)
+            description: 'Formación universitaria en ' + undergraduate.career + '.',
+            tags: [undergraduate.state].filter(Boolean)
         });
+
+        if (undergraduate.bachelor) {
+            entries.push({
+                type: 'education',
+                milestone: true,
+                start: undergraduate.bachelor,
+                title: 'Grado de bachiller',
+                organization: undergraduate.university,
+                description: 'Grado de bachiller en ' + undergraduate.career + '.',
+                tags: []
+            });
+        }
 
         if (undergraduate.title) {
             entries.push({
                 type: 'education',
+                milestone: true,
                 start: undergraduate.title,
-                title: 'Obtención del título profesional',
+                title: 'Título profesional',
                 organization: undergraduate.university,
-                description: 'Título profesional de ' + undergraduate.career + '.',
+                description: 'Título profesional de ' + undergraduate.career + '.'
+                    + (undergraduate.thesys ? ' Tesis: ' + undergraduate.thesys + '.' : ''),
                 tags: ['Ingeniería Geográfica']
             });
         }
@@ -337,6 +378,8 @@ function buildJourneyEntries() {
             type: 'education',
             start: postgraduate.start,
             title: postgraduate.level + ' · ' + postgraduate.specialization,
+            career: postgraduate.specialization,
+            level: postgraduate.level,
             organization: postgraduate.university,
             description: postgraduate.state,
             planned: !postgraduate.start,
@@ -351,6 +394,8 @@ function buildJourneyEntries() {
             end: experience.end,
             title: experience.job,
             organization: experience.company,
+            institutionType: experience.institution_type,
+            sector: experience.sect,
             description: experience.summary,
             tags: [experience.sect, experience.department].filter(Boolean)
                 .concat(getList(experience.skills).slice(0, 4)),
@@ -385,20 +430,305 @@ function getJourneySortDate(entry, currentDate) {
     return Number.isFinite(timestamp) ? timestamp : -Infinity;
 }
 
-function renderJourneyTimeline() {
-    var timeline = document.querySelector('.journey-timeline');
-    timeline.innerHTML = buildJourneyEntries().map(function(entry) {
-        var dateLabel;
-        if (entry.planned) {
-            dateLabel = 'Próximo paso · En planificación';
-        } else if (entry.start && entry.end) {
-            dateLabel = formatEducationDate(entry.start) + ' — ' + formatEducationDate(entry.end);
-        } else if (entry.end) {
-            dateLabel = formatEducationDate(entry.end);
-        } else {
-            dateLabel = formatEducationDate(entry.start) + (entry.type === 'experience' ? ' — Actualidad' : '');
+var journeyResizeObserver;
+
+function getJourneySectorIcon(sector) {
+    var icons = {
+        'Áreas Naturales Protegidas': 'park',
+        'Drenaje Pluvial': 'rainy',
+        'Telecomunicaciones': 'cell_tower',
+        'Saneamiento de Agua y Desagüe': 'water_drop',
+        'Inmobiliario': 'apartment'
+    };
+    return icons[sector] || 'work';
+}
+
+function getJourneyDuration(start, end) {
+    var startDate = new Date(start);
+    var endDate = new Date(end);
+    var months = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12
+        + endDate.getUTCMonth() - startDate.getUTCMonth();
+
+    function dateAfterMonths(count) {
+        var firstDay = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + count, 1));
+        var lastDay = new Date(Date.UTC(firstDay.getUTCFullYear(), firstDay.getUTCMonth() + 1, 0)).getUTCDate();
+        return Date.UTC(firstDay.getUTCFullYear(), firstDay.getUTCMonth(), Math.min(startDate.getUTCDate(), lastDay));
+    }
+
+    if (dateAfterMonths(months) > end) {
+        months--;
+    }
+    var years = Math.floor(months / 12);
+    var remainingMonths = months % 12;
+    var days = Math.round((end - dateAfterMonths(months)) / (24 * 60 * 60 * 1000));
+    var parts = [];
+    if (years) {
+        parts.push({ value: years, unit: years === 1 ? 'año' : 'años', short: 'a' });
+    }
+    if (remainingMonths) {
+        parts.push({ value: remainingMonths, unit: remainingMonths === 1 ? 'mes' : 'meses', short: 'm' });
+    }
+    if (days || !parts.length) {
+        parts.push({ value: days, unit: days === 1 ? 'día' : 'días', short: 'd' });
+    }
+    return {
+        full: parts.map(function(part) { return part.value + ' ' + part.unit; }).join(' '),
+        compact: parts.map(function(part) { return part.value + part.short; }).join(' '),
+        shortest: parts[0].value + parts[0].short + (parts.length > 1 ? '+' : '')
+    };
+}
+
+function fitJourneyText(context, element, text) {
+    var width = element.clientWidth;
+    if (!width) {
+        return;
+    }
+    context.font = getComputedStyle(element).font;
+    var words = text.split(/\s+/);
+    var label = '';
+    words.some(function(word) {
+        var next = label ? label + ' ' + word : word;
+        if (context.measureText(next).width > width) {
+            return true;
+        }
+        label = next;
+        return false;
+    });
+    var initials = words.map(function(word) {
+        return /^[\p{L}\p{N}]/u.test(word) ? word.charAt(0).toLocaleUpperCase('es') : '';
+    }).join('');
+    if (!label) {
+        label = context.measureText(initials).width <= width ? initials : '';
+    }
+    element.textContent = label || '…';
+}
+
+function fitJourneyCardLabels(list, entries) {
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    list.querySelectorAll('.timeline-card').forEach(function(button) {
+        var item = entries[Number(button.getAttribute('data-journey-index'))];
+        var primary = button.querySelector('.timeline-card-label');
+        var institution = button.querySelector('.timeline-card-institution');
+        var meta = button.querySelector('.timeline-card-meta');
+        var dates = button.querySelector('.timeline-card-dates');
+        var metaWidth = meta.clientWidth;
+        if (!metaWidth) {
+            return;
         }
 
+        var primaryText = item.entry.type === 'experience' || item.entry.milestone
+            ? item.entry.title : item.entry.career || item.entry.level;
+        context.font = getComputedStyle(meta).font;
+        var date = item.entry.milestone ? item.entry.start : item.entry.end;
+        var labels = item.entry.type === 'experience'
+            ? [item.duration.full, item.duration.compact, item.duration.shortest]
+            : item.entry.career && item.entry.end
+                ? [formatJourneyDateLabel(item.entry), item.entry.start.slice(0, 4) + ' — ' + item.entry.end.slice(0, 4)]
+                : date ? [formatEducationDate(date), date.slice(0, 4)] : ['En curso'];
+        meta.textContent = institution && !button.closest('.timeline-event-compact') && item.entry.career && item.entry.end
+            ? labels[0]
+            : labels.find(function(text) {
+                return context.measureText(text).width <= metaWidth;
+            }) || '…';
+        if (dates && dates.clientWidth) {
+            var startDate = dates.querySelector('.timeline-card-start');
+            var endDate = dates.querySelector('.timeline-card-end');
+            context.font = getComputedStyle(startDate).font;
+            var startLabels = [formatJourneyExperienceDate(item.entry.start), formatJourneyExperienceDate(item.entry.start, true)];
+            var endLabels = item.entry.end
+                ? [formatJourneyExperienceDate(item.entry.end), formatJourneyExperienceDate(item.entry.end, true)]
+                : ['Actualidad'];
+            startDate.textContent = startLabels.find(function(text) {
+                return context.measureText(text).width <= dates.clientWidth;
+            }) || item.entry.start.slice(0, 4);
+            endDate.textContent = endLabels.find(function(text) {
+                return context.measureText(text).width <= dates.clientWidth;
+            }) || (item.entry.end ? item.entry.end.slice(0, 4) : 'Hoy');
+            if (item.height < 60
+                && context.measureText(startDate.textContent).width + context.measureText(endDate.textContent).width + 5 > dates.clientWidth) {
+                var compactStart = startLabels[startLabels.length - 1];
+                var compactEnd = endLabels[endLabels.length - 1];
+                if (context.measureText(compactStart).width + context.measureText(compactEnd).width + 5 <= dates.clientWidth) {
+                    startDate.textContent = compactStart;
+                    endDate.textContent = compactEnd;
+                }
+            }
+            if (context.measureText(startDate.textContent + ' — ' + endDate.textContent).width + 5 <= dates.clientWidth) {
+                startDate.textContent += ' —';
+            } else if (context.measureText(startDate.textContent + ' - ' + endDate.textContent).width + 5 <= dates.clientWidth) {
+                startDate.textContent += ' -';
+            }
+        }
+        if (institution && !button.closest('.timeline-event-compact')) {
+            primary.textContent = primaryText;
+            institution.textContent = item.entry.organization;
+            if (button.scrollHeight <= button.clientHeight) {
+                return;
+            }
+        }
+        fitJourneyText(context, primary, primaryText);
+        if (institution) {
+            fitJourneyText(context, institution, item.entry.organization);
+        }
+    });
+}
+
+function renderJourneyTimeline() {
+    var timeline = document.querySelector('.journey-timeline');
+    var axis = timeline.querySelector('.timeline-axis');
+    var list = timeline.querySelector('.timeline-events');
+    var detail = document.querySelector('#journey-detail');
+    var today = new Date();
+    var todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    var axisStart = Date.UTC(2017, 0, 1);
+    var entries = buildJourneyEntries().filter(function(entry) {
+        return !entry.planned;
+    }).map(function(entry) {
+        var start = Date.parse(entry.start + 'T00:00:00Z');
+        var end = entry.end ? Date.parse(entry.end + 'T00:00:00Z')
+            : entry.type === 'experience' ? Math.max(todayUTC, start) : start;
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+            throw new Error('Invalid date range in journey: ' + entry.title);
+        }
+        if (entry.type === 'experience' && entry.institutionType !== 'public' && entry.institutionType !== 'private') {
+            throw new Error('Invalid institution type in journey: ' + entry.organization);
+        }
+
+        return {
+            entry: entry,
+            start: Math.max(start, axisStart),
+            end: Math.min(end, todayUTC),
+            duration: entry.type === 'experience' ? getJourneyDuration(start, end) : null
+        };
+    }).filter(function(item) {
+        return item.start <= item.end;
+    });
+    var latest = todayUTC;
+    var pixelsPerMillisecond = 160 / (365.2425 * 24 * 60 * 60 * 1000);
+    var axisHeight = (latest - axisStart) * pixelsPerMillisecond;
+    var axisPadding = 64;
+    var minimumCardHeight = 48;
+    var groups = { experience: [], education: [] };
+
+    timeline.style.height = (axisHeight + axisPadding * 2) + 'px';
+    axis.style.top = axisPadding + 'px';
+    axis.style.height = axisHeight + 'px';
+    axis.innerHTML = '<span class="timeline-axis-tooltip" hidden></span>';
+
+    var covidBand = timeline.querySelector('.timeline-covid-band');
+    var covidStart = Math.max(Date.UTC(2020, 2, 16), axisStart);
+    var covidEnd = Math.min(Date.UTC(2020, 6, 1), latest);
+    covidBand.hidden = covidEnd <= covidStart;
+    if (!covidBand.hidden) {
+        covidBand.style.top = (axisPadding + (latest - covidEnd) * pixelsPerMillisecond) + 'px';
+        covidBand.style.height = ((covidEnd - covidStart) * pixelsPerMillisecond) + 'px';
+    }
+
+    for (var year = new Date(axisStart).getUTCFullYear(); year <= new Date(latest).getUTCFullYear(); year++) {
+        var tick = document.createElement('span');
+        tick.className = 'timeline-year';
+        tick.style.top = ((latest - Date.UTC(year, 0, 1)) * pixelsPerMillisecond) + 'px';
+        tick.textContent = year;
+        axis.appendChild(tick);
+    }
+
+    entries.sort(function(first, second) {
+        return second.end - first.end || second.start - first.start;
+    }).forEach(function(item) {
+        item.top = axisPadding + (latest - item.end) * pixelsPerMillisecond;
+        item.height = Math.max((item.end - item.start) * pixelsPerMillisecond, minimumCardHeight);
+        var typeGroups = groups[item.entry.type];
+        var group = typeGroups[typeGroups.length - 1];
+        if (!group || item.end < group.start) {
+            group = { lanes: [], items: [], start: item.start };
+            typeGroups.push(group);
+        }
+        var lane = group.lanes.findIndex(function(start) {
+            return item.end < start;
+        });
+        if (lane === -1) {
+            lane = group.lanes.length;
+        }
+        group.lanes[lane] = item.start;
+        group.start = Math.min(group.start, item.start);
+        group.items.push(item);
+        item.lane = lane;
+    });
+
+    Object.keys(groups).forEach(function(type) {
+        groups[type].forEach(function(group, groupIndex, typeGroups) {
+            var nextGroup = typeGroups[groupIndex + 1];
+            group.items.forEach(function(item, index) {
+                // A minimum-height card must not cover the next non-overlapping period.
+                var nextInLane = group.items.slice(index + 1).find(function(next) {
+                    return next.lane === item.lane;
+                });
+                var nextTop = nextInLane ? nextInLane.top : Infinity;
+                if (nextGroup) {
+                    nextTop = Math.min(nextTop, nextGroup.items[0].top);
+                }
+                item.height = Math.min(item.height, nextTop - item.top);
+                item.lanes = group.lanes.length;
+            });
+        });
+    });
+
+    list.innerHTML = entries.map(function(item, index) {
+        var entry = item.entry;
+        var dateLabel = formatJourneyDateLabel(entry);
+        var durationLabel = item.duration ? item.duration.full : 'Hito';
+        var institutionLabel = entry.institutionType === 'public' ? 'Institución pública'
+            : entry.institutionType === 'private' ? 'Institución privada' : '';
+        var primaryLabel = entry.type === 'experience' || entry.milestone ? entry.title : entry.career || entry.level;
+        var metaLabel = entry.type === 'experience' ? durationLabel
+            : entry.milestone ? formatEducationDate(entry.start)
+            : entry.career && entry.end ? dateLabel
+            : entry.end ? formatEducationDate(entry.end) : 'En curso';
+        var sectorLabel = entry.sector ? 'Sector: ' + entry.sector : '';
+        var icon = entry.type === 'experience' ? getJourneySectorIcon(entry.sector)
+            : entry.milestone ? 'workspace_premium' : '';
+        return `
+            <li class="timeline-event timeline-event-${entry.type}${entry.institutionType ? ' timeline-event-' + entry.institutionType : ''}${entry.milestone ? ' timeline-event-milestone' : ''}${item.height < 52 ? ' timeline-event-compact' : ''}${item.height < 36 ? ' timeline-event-short' : ''}${item.height < 18 ? ' timeline-event-tiny' : ''}"
+                style="--event-top: ${item.top}px; --event-height: ${item.height}px; --lane: ${item.lane}; --lanes: ${item.lanes}">
+                <button class="timeline-card" type="button" data-journey-index="${index}"
+                    aria-label="${escapeHTML([entry.type === 'education' ? 'Educación: ' + primaryLabel : 'Experiencia: ' + primaryLabel, entry.organization, institutionLabel, sectorLabel, dateLabel, item.duration ? durationLabel : ''].filter(Boolean).join(', '))}"
+                    title="${escapeHTML([primaryLabel, entry.organization, institutionLabel, sectorLabel, dateLabel, item.duration ? durationLabel : ''].filter(Boolean).join(' · '))}">
+                    <span class="timeline-card-heading">
+                        ${icon ? `<span class="material-symbols-outlined timeline-card-icon" aria-hidden="true">${escapeHTML(icon)}</span>` : ''}
+                        <span class="timeline-card-label">${escapeHTML(primaryLabel)}</span>
+                    </span>
+                    ${entry.type === 'education' && !entry.milestone ? `<span class="timeline-card-institution">${escapeHTML(entry.organization)}</span>` : ''}
+                    <span class="timeline-card-meta">${escapeHTML(metaLabel)}</span>
+                    ${entry.type === 'experience' ? `
+                        <span class="timeline-card-dates" aria-hidden="true">
+                            <span class="timeline-card-start">${escapeHTML(formatJourneyExperienceDate(entry.start))} —</span>
+                            <span class="timeline-card-end">${escapeHTML(entry.end ? formatJourneyExperienceDate(entry.end) : 'Actualidad')}</span>
+                        </span>
+                    ` : ''}
+                </button>
+            </li>
+        `;
+    }).join('');
+
+    if (journeyResizeObserver) {
+        journeyResizeObserver.disconnect();
+    }
+    journeyResizeObserver = new ResizeObserver(function() {
+        fitJourneyCardLabels(list, entries);
+    });
+    journeyResizeObserver.observe(timeline);
+    list.querySelectorAll('.timeline-card').forEach(function(button) {
+        journeyResizeObserver.observe(button);
+    });
+
+    list.onclick = function(event) {
+        var button = event.target.closest('[data-journey-index]');
+        if (!button) {
+            return;
+        }
+        var item = entries[Number(button.getAttribute('data-journey-index'))];
+        var entry = item.entry;
         var tags = (entry.tags || []).map(function(tag) {
             return `<span class="timeline-tag">${escapeHTML(tag)}</span>`;
         });
@@ -406,34 +736,58 @@ function renderJourneyTimeline() {
             tags.push(`<span class="timeline-tag">+${entry.extraSkillCount} habilidades</span>`);
         }
 
-        return `
-            <li class="timeline-event timeline-event-${entry.type}" data-timeline-type="${entry.type}">
-                <article class="timeline-card">
-                    <span class="timeline-date">${escapeHTML(dateLabel)}</span>
-                    <span class="timeline-type">${entry.type === 'education' ? 'Educación' : 'Experiencia'}</span>
-                    <h3>${escapeHTML(entry.title)}</h3>
-                    <p class="timeline-organization">${escapeHTML(entry.organization)}</p>
-                    <p class="timeline-description">${escapeHTML(entry.description || '')}</p>
-                    <div class="timeline-tags">${tags.join('')}</div>
-                </article>
-            </li>
+        detail.querySelector('.journey-detail-content').innerHTML = `
+            <span class="timeline-date">${escapeHTML(formatJourneyDateLabel(entry))}</span>
+            ${item.duration ? `<span class="timeline-date">Duración: ${escapeHTML(item.duration.full)}</span>` : ''}
+            ${entry.type === 'education' ? '<span class="timeline-type timeline-type-education">Educación</span>' : ''}
+            ${entry.institutionType ? `<span class="timeline-type timeline-type-${entry.institutionType}">${entry.institutionType === 'public' ? 'Institución pública' : 'Institución privada'}</span>` : ''}
+            <h3 id="journey-detail-title">${escapeHTML(entry.title)}</h3>
+            <p class="timeline-organization">${escapeHTML(entry.organization)}</p>
+            <p class="timeline-description">${escapeHTML(entry.description || '')}</p>
+            <div class="timeline-tags">${tags.join('')}</div>
         `;
-    }).join('');
+        detail.showModal();
+    };
+    detail.onkeydown = function(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            detail.close();
+        }
+    };
+
+    axis.onpointermove = function(event) {
+        var offset = Math.max(0, Math.min(axisHeight, event.clientY - axis.getBoundingClientRect().top));
+        var date = new Date(latest - offset / pixelsPerMillisecond);
+        var tooltip = axis.querySelector('.timeline-axis-tooltip');
+        tooltip.textContent = new Intl.DateTimeFormat('es-PE', {
+            month: 'long', year: 'numeric', timeZone: 'UTC'
+        }).format(date);
+        tooltip.style.top = offset + 'px';
+        tooltip.hidden = false;
+    };
+    axis.onpointerleave = function() {
+        axis.querySelector('.timeline-axis-tooltip').hidden = true;
+    };
 }
 
-function initializeTimelineFilters() {
-    var filterButtons = document.querySelectorAll('[data-timeline-filter]');
-    filterButtons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            var filter = button.getAttribute('data-timeline-filter');
-            filterButtons.forEach(function(filterButton) {
-                filterButton.setAttribute('aria-pressed', String(filterButton === button));
-            });
-            document.querySelectorAll('.timeline-event').forEach(function(event) {
-                event.hidden = filter !== 'all' && event.getAttribute('data-timeline-type') !== filter;
-            });
-        });
-    });
+function formatJourneyExperienceDate(date, shortYear) {
+    return new Intl.DateTimeFormat('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: shortYear ? '2-digit' : 'numeric',
+        timeZone: 'UTC'
+    }).format(new Date(date + 'T00:00:00Z'));
+}
+
+function formatJourneyDateLabel(entry) {
+    if (entry.type === 'experience') {
+        return formatJourneyExperienceDate(entry.start) + ' — '
+            + (entry.end ? formatJourneyExperienceDate(entry.end) : 'Actualidad');
+    }
+    if (entry.end) {
+        return formatEducationDate(entry.start) + ' — ' + formatEducationDate(entry.end);
+    }
+    return formatEducationDate(entry.start);
 }
 
 // ==============================
@@ -502,7 +856,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderProfileHighlights();
     initializeExperienceDashboard();
     renderJourneyTimeline();
-    initializeTimelineFilters();
     window.addEventListener('resize', function() {
         requestAnimationFrame(fitSummaryMap);
     });

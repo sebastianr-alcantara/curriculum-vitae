@@ -41,16 +41,23 @@
             <section id="sec-summary" class="section" state="activated" role="region" aria-labelledby="summary-title" aria-hidden="false">
                 <h2 class="title" id="summary-title">Resumen profesional</h2>
                 <span class="about-me"></span>
-                <div class="summary-highlights" aria-label="Experiencia y especialidades">
+                <div class="summary-highlights" aria-label="Experiencia profesional">
                     <div class="experience-metric">
                         <span class="metric-value" id="experience-years">0+</span>
                         <span class="metric-label">años de experiencia profesional</span>
-                        <span class="metric-note" id="experience-period-note"></span>
                     </div>
-                    <div class="expertise-summary">
-                        <h3>¿En qué puedo aportar?</h3>
-                        <p>Experiencia técnica en estas áreas:</p>
-                        <div class="expertise-list"></div>
+                    <div class="institution-summary">
+                        <h3>Experiencia por institución (aprox.)</h3>
+                        <dl class="institution-durations">
+                            <div>
+                                <dt>Instituciones públicas</dt>
+                                <dd id="public-experience-duration"></dd>
+                            </div>
+                            <div>
+                                <dt>Instituciones privadas</dt>
+                                <dd id="private-experience-duration"></dd>
+                            </div>
+                        </dl>
                     </div>
                 </div>
                 <div class="experience-dashboard">
@@ -97,17 +104,39 @@
             </section>
             <section id="sec-journey" class="section" state="deactivated" role="region" aria-labelledby="journey-title" aria-hidden="true">
                 <div class="journey-header">
-                    <div>
-                        <h2 class="section-heading" id="journey-title">Mi trayectoria</h2>
-                        <p class="journey-intro">Un recorrido desde mi formación hasta los proyectos que han impulsado mi carrera.</p>
+                    <h2 class="section-heading" id="journey-title">Mi trayectoria</h2>
+                    <p class="journey-intro">Desde 2017, mi formación en Ingeniería Geográfica y experiencia en GIS, drenaje pluvial, catastro y desarrollo inmobiliario. Selecciona un periodo para conocer sus detalles.</p>
+                </div>
+                <div class="journey-content">
+                    <div class="journey-legend" aria-label="Leyenda de trayectoria">
+                        <span class="journey-legend-public">Institución pública</span>
+                        <span class="journey-legend-private">Institución privada</span>
+                        <span class="journey-legend-education">Educación</span>
+                        <span class="journey-legend-milestone">Hito</span>
+                        <span class="journey-legend-covid">COVID-19</span>
                     </div>
-                    <div class="journey-filters" role="group" aria-label="Filtrar trayectoria">
-                        <button type="button" data-timeline-filter="all" aria-pressed="true">Todo</button>
-                        <button type="button" data-timeline-filter="experience" aria-pressed="false">Experiencia</button>
-                        <button type="button" data-timeline-filter="education" aria-pressed="false">Educación</button>
+                    <div class="journey-column-headings" aria-hidden="true">
+                        <span>Experiencia</span>
+                        <span>Educación</span>
+                    </div>
+                    <div class="journey-timeline">
+                        <div class="timeline-covid-band" role="note" aria-label="COVID-19 en el Perú: educación y servicios afectados durante el periodo inicial de restricciones, del 16 de marzo al 30 de junio de 2020.">
+                            <span>COVID-19</span>
+                            <span>Educación y servicios afectados</span>
+                            <span>16/03 – 30/06/2020</span>
+                        </div>
+                        <div class="timeline-axis" aria-hidden="true">
+                            <span class="timeline-axis-tooltip" hidden></span>
+                        </div>
+                        <ol class="timeline-events" aria-label="Cronología de educación y experiencia"></ol>
                     </div>
                 </div>
-                <ol class="journey-timeline" aria-label="Cronología de educación y experiencia"></ol>
+                <dialog id="journey-detail" aria-labelledby="journey-detail-title">
+                    <div class="journey-detail-content"></div>
+                    <form method="dialog">
+                        <button type="submit">Cerrar</button>
+                    </form>
+                </dialog>
             </section>
         </main>
         <nav class="footer" aria-label="Secciones del currículum">
