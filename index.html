@@ -13,7 +13,9 @@
 <body>
     <div id="contenedor" class="contenedor">
         <header class="header">
-            <img class="profile" src="recursos/imagenes/profile-photo.png" alt="Foto de Sebastián Alcántara">
+            <button class="profile" type="button" aria-label="Ver foto de perfil ampliada" aria-haspopup="dialog">
+                <img src="recursos/imagenes/profile-photo.png" alt="Foto de Sebastián Alcántara">
+            </button>
             <div class="professional">
                 <span class="name">Sebastián Alcántara</span>
                 <span class="career">Ingeniero Geógrafo</span>
@@ -122,8 +124,7 @@
                     <div class="journey-timeline">
                         <div class="timeline-covid-band" role="note" aria-label="COVID-19 en el Perú: educación y servicios afectados durante el periodo inicial de restricciones, del 16 de marzo al 30 de junio de 2020.">
                             <span>COVID-19</span>
-                            <span>Educación y servicios afectados</span>
-                            <span>16/03 – 30/06/2020</span>
+                            <span>Primera influencia del COVID-19: Servicios de educación y trabajo afectados.</span>
                         </div>
                         <div class="timeline-axis" aria-hidden="true">
                             <span class="timeline-axis-tooltip" hidden></span>
@@ -139,6 +140,12 @@
                 </dialog>
             </section>
         </main>
+        <dialog id="profile-photo-dialog" aria-label="Foto de Sebastián Alcántara ampliada">
+            <img src="recursos/imagenes/profile-photo.png" alt="Foto de Sebastián Alcántara">
+            <form method="dialog">
+                <button type="submit" autofocus>Cerrar</button>
+            </form>
+        </dialog>
         <nav class="footer" aria-label="Secciones del currículum">
             <button id="btn-summary" type="button" aria-controls="sec-summary" aria-pressed="true" state="activated">Resumen</button>
             <button id="btn-journey" type="button" aria-controls="sec-journey" aria-pressed="false" state="deactivated">Mi trayectoria</button>

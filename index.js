@@ -852,6 +852,16 @@ function getDefaultStyle(feature) {
 // INICIALIZACION DEL SISTEMA
 // ==============================
 document.addEventListener('DOMContentLoaded', () => {
+    const photoDialog = document.querySelector('#profile-photo-dialog');
+    document.querySelector('.profile').addEventListener('click', function() {
+        photoDialog.showModal();
+    });
+    photoDialog.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            photoDialog.close();
+        }
+    });
     initializeMapSummary();
     renderProfileHighlights();
     initializeExperienceDashboard();

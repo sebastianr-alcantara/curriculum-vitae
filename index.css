@@ -312,6 +312,27 @@ body {
     object-fit: cover;
 }
 
+.contenedor .header .profile {
+    flex-shrink: 0;
+    width: 7rem;
+    height: 7rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.contenedor .header .profile img {
+    width: 100%;
+    height: 100%;
+}
+
+.contenedor .header .profile:focus-visible {
+    outline: 2px solid #FFFFFF;
+    outline-offset: 3px;
+}
+
 .contenedor .header .professional {
     flex: 1;
     width: auto;
@@ -1072,7 +1093,8 @@ body {
     width: auto;
 }
 
-#journey-detail {
+#journey-detail,
+#profile-photo-dialog {
     width: min(32rem, calc(100% - 2rem));
     max-height: calc(100% - 2rem);
     margin: auto;
@@ -1082,7 +1104,8 @@ body {
     color: var(--colour-primary-ultradark);
 }
 
-#journey-detail::backdrop {
+#journey-detail::backdrop,
+#profile-photo-dialog::backdrop {
     background: rgba(16, 42, 67, 0.5);
 }
 
@@ -1092,11 +1115,13 @@ body {
     gap: 0.5rem;
 }
 
-#journey-detail form {
+#journey-detail form,
+#profile-photo-dialog form {
     margin-top: 1rem;
 }
 
-#journey-detail button {
+#journey-detail button,
+#profile-photo-dialog button {
     padding: 0.4rem 0.8rem;
     border: 0;
     border-radius: 0.4rem;
@@ -1104,6 +1129,19 @@ body {
     color: #FFFFFF;
     cursor: pointer;
     font: inherit;
+}
+
+#profile-photo-dialog img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100dvh - 8rem);
+    width: auto;
+    height: auto;
+    margin: auto;
+}
+
+#profile-photo-dialog form {
+    text-align: center;
 }
 
 .timeline-date {
@@ -1178,7 +1216,8 @@ body {
 .dashboard-result-toggle:focus-visible,
 .dashboard-filters button:focus-visible,
 .timeline-card:focus-visible,
-#journey-detail button:focus-visible {
+#journey-detail button:focus-visible,
+#profile-photo-dialog button:focus-visible {
     outline: 2px solid var(--colour-primary);
     outline-offset: 2px;
 }
